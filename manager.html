@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced Task Manager</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial;
+}
+
+body{
+    background:linear-gradient(135deg,#1d2671,#c33764);
+    min-height:100vh;
+    padding:30px;
+    color:white;
+}
+
+.container{
+    width:95%;
+    max-width:1200px;
+    margin:auto;
+    background:rgba(255,255,255,0.1);
+    backdrop-filter:blur(10px);
+    border-radius:20px;
+    padding:25px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.3);
+}
+
+h1{
+    text-align:center;
+    margin-bottom:20px;
+    font-size:40px;
+}
+
+.top-section{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:15px;
+}
+
+input,select,button{
+    padding:12px;
+    border:none;
+    border-radius:10px;
+    outline:none;
+    font-size:15px;
+}
+
+button{
+    background:#00c6ff;
+    color:white;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+button:hover{
+    transform:scale(1.05);
+    background:#0072ff;
+}
+
+.search-filter{
+    margin-top:20px;
+    display:flex;
+    gap:15px;
+    flex-wrap:wrap;
+}
+
+table{
+    width:100%;
+    margin-top:25px;
+    border-collapse:collapse;
+    overflow:hidden;
+    border-radius:15px;
+}
+
+th{
+    background:#111;
+    padding:15px;
+}
+
+td{
+    padding:15px;
+    text-align:center;
+    background:rgba(255,255,255,0.08);
+}
+
+tr:hover{
+    background:rgba(255,255,255,0.12);
+}
+
+.completed{
+    color:lime;
+    font-weight:bold;
+}
+
+.pending{
+    color:yellow;
+    font-weight:bold;
+}
+
+.high{
+    color:red;
+    font-weight:bold;
+}
+
+.medium{
+    color:orange;
+    font-weight:bold;
+}
+
+.low{
+    color:lightgreen;
+    font-weight:bold;
+}
+
+.action-btn{
+    padding:8px 12px;
+    margin:2px;
+    border:none;
+    border-radius:8px;
+    color:white;
+    cursor:pointer;
+}
+
+.edit{
+    background:#28a745;
+}
+
+.delete{
+    background:#dc3545;
+}
+
+.stats{
+    margin-top:25px;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:15px;
+}
+
+.card{
+    background:rgba(255,255,255,0.1);
+    padding:20px;
+    border-radius:15px;
+    text-align:center;
+}
+
+.progress-container{
+    width:100%;
+    background:#333;
+    border-radius:20px;
+    margin-top:15px;
+}
+
+.progress-bar{
+    height:20px;
+    width:0%;
+    background:lime;
+    border-radius:20px;
+    text-align:center;
+    color:black;
+    font-weight:bold;
+}
+
+@media(max-width:768px){
+    table{
+        font-size:12px;
+    }
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Advanced Task Manager</h1>
+
+<div class="top-section">
+
+<input type="text" id="username" placeholder="Enter User Name">
+
+<input type="text" id="task" placeholder="Enter Task">
+
+<input type="date" id="deadline">
+
+<select id="priority">
+<option value="High">High Priority</option>
+<option value="Medium">Medium Priority</option>
+<option value="Low">Low Priority</option>
+</select>
+
+<select id="status">
+<option value="Pending">Pending</option>
+<option value="Completed">Completed</option>
+</select>
+
+<button onclick="addTask()">Add Task</button>
+
+</div>
+
+<div class="search-filter">
+
+<input type="text" id="search" placeholder="Search Task..." onkeyup="searchTask()">
+
+<select id="filter" onchange="filterTasks()">
+<option value="All">All Tasks</option>
+<option value="Pending">Pending</option>
+<option value="Completed">Completed</option>
+</select>
+
+</div>
+
+<table>
+
+<thead>
+<tr>
+<th>User</th>
+<th>Task</th>
+<th>Deadline</th>
+<th>Priority</th>
+<th>Status</th>
+<th>Actions</th>
+</tr>
+</thead>
+
+<tbody id="taskList">
+
+</tbody>
+
+</table>
+
+<div class="stats">
+
+<div class="card">
+<h2>Total Tasks</h2>
+<h1 id="totalTasks">0</h1>
+</div>
+
+<div class="card">
+<h2>Completed</h2>
+<h1 id="completedTasks">0</h1>
+</div>
+
+<div class="card">
+<h2>Pending</h2>
+<h1 id="pendingTasks">0</h1>
+</div>
+
+</div>
+
+<div class="progress-container">
+<div class="progress-bar" id="progressBar">0%</div>
+</div>
+
+</div>
+
+<script>
+
+let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+displayTasks();
+
+function addTask(){
+
+    let username = document.getElementById("username").value;
+    let task = document.getElementById("task").value;
+    let deadline = document.getElementById("deadline").value;
+    let priority = document.getElementById("priority").value;
+    let status = document.getElementById("status").value;
+
+    if(username=="" || task=="" || deadline==""){
+        alert("Please fill all fields");
+        return;
+    }
+
+    let taskObj = {
+        username,
+        task,
+        deadline,
+        priority,
+        status
+    };
+
+    tasks.push(taskObj);
+
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+
+    displayTasks();
+
+    clearFields();
+}
+
+function displayTasks(){
+
+    let table = document.getElementById("taskList");
+
+    table.innerHTML = "";
+
+    tasks.forEach((t,index)=>{
+
+        let row = `
+        <tr>
+
+        <td>${t.username}</td>
+
+        <td>${t.task}</td>
+
+        <td>${t.deadline}</td>
+
+        <td class="${t.priority.toLowerCase()}">
+            ${t.priority}
+        </td>
+
+        <td class="${t.status.toLowerCase()}">
+            ${t.status}
+        </td>
+
+        <td>
+
+        <button class="action-btn edit"
+        onclick="editTask(${index})">
+        Edit
+        </button>
+
+        <button class="action-btn delete"
+        onclick="deleteTask(${index})">
+        Delete
+        </button>
+
+        </td>
+
+        </tr>
+        `;
+
+        table.innerHTML += row;
+
+    });
+
+    updateStats();
+}
+
+function deleteTask(index){
+
+    if(confirm("Delete this task?")){
+
+        tasks.splice(index,1);
+
+        localStorage.setItem("tasks",
+        JSON.stringify(tasks));
+
+        displayTasks();
+    }
+}
+
+function editTask(index){
+
+    let t = tasks[index];
+
+    document.getElementById("username").value=t.username;
+    document.getElementById("task").value=t.task;
+    document.getElementById("deadline").value=t.deadline;
+    document.getElementById("priority").value=t.priority;
+    document.getElementById("status").value=t.status;
+
+    tasks.splice(index,1);
+
+    localStorage.setItem("tasks",
+    JSON.stringify(tasks));
+
+    displayTasks();
+}
+
+function clearFields(){
+
+    document.getElementById("username").value="";
+    document.getElementById("task").value="";
+    document.getElementById("deadline").value="";
+}
+
+function searchTask(){
+
+    let input =
+    document.getElementById("search")
+    .value.toLowerCase();
+
+    let rows =
+    document.querySelectorAll("#taskList tr");
+
+    rows.forEach(row=>{
+
+        let text =
+        row.innerText.toLowerCase();
+
+        row.style.display =
+        text.includes(input) ? "" : "none";
+
+    });
+}
+
+function filterTasks(){
+
+    let filter =
+    document.getElementById("filter").value;
+
+    let rows =
+    document.querySelectorAll("#taskList tr");
+
+    rows.forEach(row=>{
+
+        let status =
+        row.children[4].innerText;
+
+        if(filter=="All"){
+            row.style.display="";
+        }
+
+        else if(status==filter){
+            row.style.display="";
+        }
+
+        else{
+            row.style.display="none";
+        }
+
+    });
+}
+
+function updateStats(){
+
+    let total = tasks.length;
+
+    let completed =
+    tasks.filter(
+    t=>t.status=="Completed").length;
+
+    let pending =
+    tasks.filter(
+    t=>t.status=="Pending").length;
+
+    document.getElementById(
+    "totalTasks").innerText = total;
+
+    document.getElementById(
+    "completedTasks").innerText = completed;
+
+    document.getElementById(
+    "pendingTasks").innerText = pending;
+
+    let progress =
+    total==0 ? 0 :
+    (completed/total)*100;
+
+    let bar =
+    document.getElementById(
+    "progressBar");
+
+    bar.style.width =
+    progress + "%";
+
+    bar.innerText =
+    Math.round(progress) + "%";
+}
+
+</script>
+
+</body>
+</html>
